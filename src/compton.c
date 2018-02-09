@@ -5830,6 +5830,7 @@ get_cfg(session_t *ps, int argc, char *const *argv, bool first_pass) {
   for (i = 0; i < NUM_WINTYPES; ++i) {
     ps->o.wintype_fade[i] = false;
     ps->o.wintype_shadow[i] = false;
+    ps->o.wintype_unshadowed[i] = false;
     ps->o.wintype_opacity[i] = 1.0;
   }
 
@@ -6083,8 +6084,10 @@ get_cfg(session_t *ps, int argc, char *const *argv, bool first_pass) {
   if (shadow_enable)
     wintype_arr_enable(ps->o.wintype_shadow);
   ps->o.wintype_shadow[WINTYPE_DESKTOP] = false;
-  if (cfgtmp.no_dock_shadow)
+  if (cfgtmp.no_dock_shadow) {
     ps->o.wintype_shadow[WINTYPE_DOCK] = false;
+    ps->o.wintype_unshadowed[WINTYPE_DOCK] = true;
+  }
   if (cfgtmp.no_dnd_shadow)
     ps->o.wintype_shadow[WINTYPE_DND] = false;
   if (fading_enable)
