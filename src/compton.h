@@ -868,6 +868,9 @@ static void
 win_determine_shadow(session_t *ps, win *w);
 
 static void
+win_determine_shadowed(session_t *ps, win *w);
+
+static void
 win_set_invert_color(session_t *ps, win *w, bool invert_color_new);
 
 static void

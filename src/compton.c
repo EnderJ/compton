@@ -1841,8 +1841,16 @@ paint_all(session_t *ps, XserverRegion region, XserverRegion region_real, win *t
   rebuild_shadow_exclude_reg(ps);
   for (win *w = t; w; w = w->prev_trans) {
     if (w->unshadowed) {
-      XFixesUnionRegion(ps->dpy, ps->shadow_exclude_reg, ps->shadow_exclude_reg,
-                        w->border_size);
+      if (ps->shadow_exclude_reg == None) {
+        ps->shadow_exclude_reg =
+          XFixesCreateRegion(ps->dpy, NULL, 0);
+      }
+
+      XFixesUnionRegion(ps->dpy,
+                        ps->shadow_exclude_reg,
+                        w->border_size,
+                        ps->shadow_exclude_reg
+                        );
     }
   }
 
@@ -2901,7 +2909,6 @@ add_win(session_t *ps, Window id, Window prev) {
     .class_general = NULL,
     .role = NULL,
     .cache_sblst = NULL,
-    .cache_sdblst = NULL,
     .cache_fblst = NULL,
     .cache_fcblst = NULL,
     .cache_ivclst = NULL,
@@ -5617,7 +5624,6 @@ parse_config(session_t *ps, struct options_tmp *pcfgtmp) {
   // --detect-client-leader
   lcfg_lookup_bool(&cfg, "detect-client-leader",
       &ps->o.detect_client_leader);
-  parse_cfg_condlst(ps, &cfg, &ps->o.shadowed_blacklist, "shadow-avoid");
   // --shadow-exclude
   parse_cfg_condlst(ps, &cfg, &ps->o.shadow_blacklist, "shadow-exclude");
   // --fade-exclude
@@ -7540,7 +7546,6 @@ session_destroy(session_t *ps) {
 #ifdef CONFIG_C2
   // Free blacklists
   free_wincondlst(&ps->o.shadow_blacklist);
-  free_wincondlst(&ps->o.shadowed_blacklist);
   free_wincondlst(&ps->o.fade_blacklist);
   free_wincondlst(&ps->o.focus_blacklist);
   free_wincondlst(&ps->o.invert_color_list);
