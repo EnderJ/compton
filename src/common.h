@@ -642,6 +642,8 @@ typedef struct _options_t {
   // === Shadow ===
   /// Enable/disable shadow for specific window types.
   bool wintype_shadow[NUM_WINTYPES];
+  /// Prevent shadows appearing inside specific window types
+  bool wintype_unshadowed[NUM_WINTYPES];
   /// Red, green and blue tone of the shadow.
   double shadow_red, shadow_green, shadow_blue;
   int shadow_radius;
@@ -1191,6 +1193,8 @@ typedef struct _win {
   // Shadow-related members
   /// Whether a window has shadow. Calculated.
   bool shadow;
+  /// Whether a window should have no shadow on it. Calculaed
+  bool unshadowed;
   /// Shadow state on last paint.
   bool shadow_last;
   /// Override value of window shadow state. Set by D-Bus method calls.

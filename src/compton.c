@@ -1838,6 +1838,14 @@ paint_all(session_t *ps, XserverRegion region, XserverRegion region_real, win *t
     reg_tmp = XFixesCreateRegion(ps->dpy, NULL, 0);
   reg_tmp2 = XFixesCreateRegion(ps->dpy, NULL, 0);
 
+  rebuild_shadow_exclude_reg(ps);
+  for (win *w = t; w; w = w->prev_trans) {
+    if (w->unshadowed) {
+      XFixesUnionRegion(ps->dpy, ps->shadow_exclude_reg, ps->shadow_exclude_reg,
+                        w->border_size);
+    }
+  }
+
   for (win *w = t; w; w = w->prev_trans) {
     // Painting shadow
     if (w->shadow) {
@@ -1865,6 +1873,7 @@ paint_all(session_t *ps, XserverRegion region, XserverRegion region_real, win *t
         XFixesIntersectRegion(ps->dpy, reg_paint, region, w->extents);
       }
 
+      // TODO remove all the other regions
       if (ps->shadow_exclude_reg)
         XFixesSubtractRegion(ps->dpy, reg_paint, reg_paint,
             ps->shadow_exclude_reg);
@@ -2216,6 +2225,7 @@ map_win(session_t *ps, Window id) {
 
   // Many things above could affect shadow
   win_determine_shadow(ps, w);
+  win_determine_shadowed(ps, w);
 
   // Set fading state
   w->in_openclose = true;
@@ -2525,6 +2535,16 @@ win_set_shadow(session_t *ps, win *w, bool shadow_new) {
       add_damage_win(ps, w);
   }
 }
+
+static void
+win_determine_shadowed(session_t *ps, win *w) {
+  bool unshadowed_new = w->unshadowed;
+  if (IsViewable == w->a.map_state) {
+    unshadowed_new = (ps->o.wintype_unshadowed[w->window_type]);
+  }
+  w->unshadowed = unshadowed_new;
+}
+
 
 /**
  * Determine if a window should have shadow, and update things depending
@@ -2881,6 +2901,7 @@ add_win(session_t *ps, Window id, Window prev) {
     .class_general = NULL,
     .role = NULL,
     .cache_sblst = NULL,
+    .cache_sdblst = NULL,
     .cache_fblst = NULL,
     .cache_fcblst = NULL,
     .cache_ivclst = NULL,
@@ -5596,6 +5617,7 @@ parse_config(session_t *ps, struct options_tmp *pcfgtmp) {
   // --detect-client-leader
   lcfg_lookup_bool(&cfg, "detect-client-leader",
       &ps->o.detect_client_leader);
+  parse_cfg_condlst(ps, &cfg, &ps->o.shadowed_blacklist, "shadow-avoid");
   // --shadow-exclude
   parse_cfg_condlst(ps, &cfg, &ps->o.shadow_blacklist, "shadow-exclude");
   // --fade-exclude
@@ -7515,6 +7537,7 @@ session_destroy(session_t *ps) {
 #ifdef CONFIG_C2
   // Free blacklists
   free_wincondlst(&ps->o.shadow_blacklist);
+  free_wincondlst(&ps->o.shadowed_blacklist);
   free_wincondlst(&ps->o.fade_blacklist);
   free_wincondlst(&ps->o.focus_blacklist);
   free_wincondlst(&ps->o.invert_color_list);
